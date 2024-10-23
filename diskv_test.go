@@ -124,6 +124,41 @@ func TestDiskv(t *testing.T) {
 		}
 	})
 
+	t.Run("max len", func(t *testing.T) {
+		key20 := "12345678901234567890"
+		err := db.Set(ctx, key20, []byte(""))
+		if err != nil {
+			t.Fatalf("should not has error")
+		}
+
+		key30 := "123456789012345678901234567890"
+		err = db.Set(ctx, key30, []byte(""))
+		if err == nil {
+			t.Fatalf("should get key too long error")
+		}
+	})
+
+	t.Run("migrate", func(t *testing.T) {
+		err := db.MigrateValue(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = db.MigrateIdx(ctx, &CreateConfig{
+			Dir:     dir,
+			KeysLen: 20,
+			MaxLen:  64,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		key30 := "123456789012345678901234567890"
+		err = db.Set(ctx, key30, []byte("xxxxxxx"))
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
 }
 
 func BenchmarkDiskv(b *testing.B) {
@@ -151,7 +186,7 @@ func BenchmarkDiskv(b *testing.B) {
 	}
 }
 
-func TestXX(t *testing.T) {
+func TestDecode(t *testing.T) {
 	x := "_del[xx]"
 	op, item, err := decodeValue("xx", []byte(x))
 	if err != nil {

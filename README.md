@@ -57,6 +57,5 @@ err = db.ForEach(ctx, func(key string, value []byte) bool {
 
 ## TODO
 
-- [ ] 支持 idx 文件迁移
-- [ ] 支持 db 文件压缩 + 迁移
-- [ ] 支持用 db 文件重构 idx 文件
+- [x] 支持 idx 文件迁移
+- [x] 支持 db 文件压缩 + 迁移

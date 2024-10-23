@@ -15,6 +15,8 @@ import (
 )
 
 type Diskv struct {
+	mu sync.RWMutex // migrate 和 数据操作 不能同时进行
+
 	dir string
 
 	idxFile string
@@ -27,10 +29,11 @@ type Diskv struct {
 var DefaultCreateConfig = CreateConfig{
 	Dir: ".",
 
-	KeySize:      15,
-	ValueLenSize: 6,
-	OffsetSize:   9,
-	KeysLen:      10000,
+	// KeySize:      15,
+	// ValueLenSize: 6,
+	// OffsetSize:   9,
+	MaxLen:  32,
+	KeysLen: 10000,
 }
 
 func init() {
@@ -50,10 +53,11 @@ func init() {
 type CreateConfig struct {
 	Dir string
 
-	KeySize      int // key 的长度 (key 的长度为多少) (采用固定长度 key, 前面用 0 补齐)
-	ValueLenSize int // value 长度的长度 (用多长的数字表示 value 长度)
-	OffsetSize   int // value 偏移量的长度 (用多长的数字表示 value 的偏移量)
-	KeysLen      int // 预分配多少 key 的空间
+	// KeySize      int // key 的长度 (key 的长度为多少) (采用固定长度 key, 前面用 0 补齐)
+	// ValueLenSize int // value 长度的长度 (用多长的数字表示 value 长度)
+	// OffsetSize   int // value 偏移量的长度 (用多长的数字表示 value 的偏移量)
+	MaxLen  int // block 的最大长度 (key + valueLen + offset 共用)
+	KeysLen int // 预分配多少 key 的空间
 }
 
 func OpenDB(ctx context.Context, dir string) (*Diskv, error) {
@@ -114,6 +118,7 @@ func CreateDB(ctx context.Context, config *CreateConfig) (*Diskv, error) {
 		return nil, fmt.Errorf("create db file error: %s", err)
 	}
 
+	d.dir = config.Dir
 	d.dbFile = dbFile
 	d.dbstore = dbstore
 
@@ -135,10 +140,11 @@ func (d *Diskv) createIdx(ctx context.Context, idxFile string, config CreateConf
 	}
 
 	err = idx.setIdxMeta(ctx, &idxMeta{
-		keySize:      config.KeySize,
-		valueLenSize: config.ValueLenSize,
-		offsetSize:   config.OffsetSize,
-		keysLen:      config.KeysLen,
+		// keySize:      config.KeySize,
+		// valueLenSize: config.ValueLenSize,
+		// offsetSize:   config.OffsetSize,
+		maxLength: config.MaxLen,
+		keysLen:   config.KeysLen,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("set idx meta error: %s", err)
@@ -186,9 +192,10 @@ type idx struct {
 }
 
 type idxMeta struct {
-	keySize      int // key 的长度 (key 的长度为多少) (采用固定长度 key, 前面用 0 补齐)
-	valueLenSize int // value 长度的长度 (用多长的数字表示 value 长度)
-	offsetSize   int // value 偏移量的长度 (用多长的数字表示 value 的偏移量)
+	// keySize      int // key 的长度 (key 的长度为多少) (采用固定长度 key, 前面用 0 补齐)
+	// valueLenSize int // value 长度的长度 (用多长的数字表示 value 长度)
+	// offsetSize   int // value 偏移量的长度 (用多长的数字表示 value 的偏移量)
+	maxLength int
 
 	keysLen int // 预分配的 key 的数量
 }
@@ -279,7 +286,8 @@ func (idx *idx) getIdxMeta(ctx context.Context) (*idxMeta, error) {
 
 func (m *idxMeta) getKeyBlockLength() int {
 	// 2 个字节是分隔符, eg: 0000000longtest,000000,000000000
-	return m.keySize + 1 + m.valueLenSize + 1 + m.offsetSize
+	// return m.keySize + 1 + m.valueLenSize + 1 + m.offsetSize
+	return m.maxLength
 }
 
 func (m *idxMeta) getBlockStartOffset(slot int) int {
@@ -288,11 +296,12 @@ func (m *idxMeta) getBlockStartOffset(slot int) int {
 
 const dbMetaLen = 64
 
-// kv db meta seems like: [keysize:000015,lensize:000006,offsetsize:000010,keyslen:001000]
-// value meta eg: 0000000longtest,000000,000000000
-// 为了做对齐，最好要能被 8 整除，例如 32 byte,64 byte 等等，上述配置基本是最小配置了，15个字符的key长度，6个字符的value长度 (单个 value 最大能到 0.95MB)，9个字符的value偏移量(单个文件最大到 0.93GB)
+// // kv db meta seems like: [keysize:000015,lensize:000006,offsetsize:000010,keyslen:001000]
+// // value meta eg: 0000000longtest,000000,000000000
+// // 为了做对齐，最好要能被 8 整除，例如 32 byte,64 byte 等等，上述配置基本是最小配置了，15个字符的key长度，6个字符的value长度 (单个 value 最大能到 0.95MB)，9个字符的value偏移量(单个文件最大到 0.93GB)
 func formatIdxMeta(meta *idxMeta) []byte {
-	idxStr := fmt.Sprintf("[keysize:%06d,lensize:%06d,offsetsize:%06d,keyslen:%06d]", meta.keySize, meta.valueLenSize, meta.offsetSize, meta.keysLen)
+	// idxStr := fmt.Sprintf("[keysize:%06d,lensize:%06d,offsetsize:%06d,keyslen:%06d]", meta.keySize, meta.valueLenSize, meta.offsetSize, meta.keysLen)
+	idxStr := fmt.Sprintf("[maxlength:%06d,keyslen:%06d,x:%028d]", meta.maxLength, meta.keysLen, 0)
 	return []byte(idxStr)
 }
 
@@ -311,28 +320,28 @@ func parseIdxMeta(data []byte) (*idxMeta, error) {
 		}
 
 		switch kv[0] {
-		case "keysize":
-			idxMeta.keySize, err = fmt.Sscanf(kv[1], "%d", &idxMeta.keySize)
+		case "maxlength":
+			_, err = fmt.Sscanf(kv[1], "%d", &idxMeta.maxLength)
 			if err != nil {
 				return nil, fmt.Errorf("idx meta format error: %s", err)
 			}
-		case "lensize":
-			idxMeta.valueLenSize, err = fmt.Sscanf(kv[1], "%d", &idxMeta.valueLenSize)
-			if err != nil {
-				return nil, fmt.Errorf("idx meta format error: %s", err)
-			}
-		case "offsetsize":
-			idxMeta.offsetSize, err = fmt.Sscanf(kv[1], "%d", &idxMeta.offsetSize)
-			if err != nil {
-				return nil, fmt.Errorf("idx meta format error: %s", err)
-			}
+		// case "lensize":
+		// 	_, err = fmt.Sscanf(kv[1], "%d", &idxMeta.valueLenSize)
+		// 	if err != nil {
+		// 		return nil, fmt.Errorf("idx meta format error: %s", err)
+		// 	}
+		// case "offsetsize":
+		// 	_, err = fmt.Sscanf(kv[1], "%d", &idxMeta.offsetSize)
+		// 	if err != nil {
+		// 		return nil, fmt.Errorf("idx meta format error: %s", err)
+		// 	}
 		case "keyslen":
-			idxMeta.keysLen, err = fmt.Sscanf(kv[1], "%d", &idxMeta.keysLen)
+			_, err = fmt.Sscanf(kv[1], "%d", &idxMeta.keysLen)
 			if err != nil {
 				return nil, fmt.Errorf("idx meta format error: %s", err)
 			}
 		default:
-			return nil, fmt.Errorf("idx meta format error of unknown key: %s", kv[0])
+
 		}
 	}
 
@@ -340,7 +349,7 @@ func parseIdxMeta(data []byte) (*idxMeta, error) {
 }
 
 // value meta eg: 0000000longtest,000000,000000000
-func formatVlaueMeta(meta *valueMeta) []byte {
+func formatValueMeta(meta *valueMeta) []byte {
 	return []byte(fmt.Sprintf("%s,%d,%d", meta.key, meta.length, meta.offset))
 }
 
@@ -450,8 +459,13 @@ func (idx *idx) setValueMeta(ctx context.Context, valueMeta *valueMeta) error {
 
 		offset := int64(idx.meta.getBlockStartOffset(slot))
 
+		valueMetaData := formatValueMeta(valueMeta)
+		if len(valueMetaData) > idx.meta.getKeyBlockLength() {
+			return fmt.Errorf("value too long, max is %d", idx.meta.getKeyBlockLength())
+		}
+
 		return idx.runWithFile(ctx, func(ctx context.Context, f *os.File) error {
-			_, err := f.WriteAt(formatVlaueMeta(valueMeta), offset)
+			_, err := f.WriteAt(valueMetaData, offset)
 			if err != nil {
 				return fmt.Errorf("write idx file error: %s", err)
 			}
@@ -550,7 +564,7 @@ func (idx *idx) hashKey(ctx context.Context, key string) (int, error) {
 	return hashValue, nil
 }
 
-func (d *Diskv) ForEach(ctx context.Context, f func(ctx context.Context, key string, value []byte) (ok bool)) error {
+func (d *Diskv) forEachKey(ctx context.Context, f func(ctx context.Context, valMeta *valueMeta) (ok bool)) error {
 	idxMeta, err := d.idx.getIdxMeta(ctx)
 	if err != nil {
 		return err
@@ -574,20 +588,42 @@ func (d *Diskv) ForEach(ctx context.Context, f func(ctx context.Context, key str
 			continue
 		}
 
-		val, err := d.dbstore.read(ctx, valMeta)
-		if err != nil {
-			return err
-		}
-
-		if !f(ctx, valMeta.key, val.value) { // 用户主动退出
+		if !f(ctx, valMeta) { // 用户主动退出
 			return nil
 		}
-
 		slot++
 	}
 }
 
+func (d *Diskv) ForEach(ctx context.Context, f func(ctx context.Context, key string, value []byte) (ok bool)) error {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	return d.forEach(ctx, f)
+}
+
+func (d *Diskv) forEach(ctx context.Context, f func(ctx context.Context, key string, value []byte) (ok bool)) error {
+	var err error
+	d.forEachKey(ctx, func(ctx context.Context, valMeta *valueMeta) bool {
+		var val *valueItem
+		val, err = d.dbstore.read(ctx, valMeta)
+		if err != nil {
+			return false
+		}
+
+		if !f(ctx, valMeta.key, val.value) { // 用户主动退出
+			return false
+		}
+
+		return true
+	})
+	return err
+}
+
 func (d *Diskv) Get(ctx context.Context, key string) (data []byte, ok bool, err error) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
 	meta, ok, err := d.idx.getValueMeta(ctx, key)
 	if err != nil {
 		return nil, false, err
@@ -606,6 +642,9 @@ func (d *Diskv) Get(ctx context.Context, key string) (data []byte, ok bool, err 
 }
 
 func (d *Diskv) GetString(ctx context.Context, key string) (data string, ok bool, err error) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
 	val, ok, err := d.Get(ctx, key)
 	if err != nil {
 		return "", false, err
@@ -615,6 +654,9 @@ func (d *Diskv) GetString(ctx context.Context, key string) (data string, ok bool
 }
 
 func (d *Diskv) Set(ctx context.Context, key string, val []byte) error {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
 	valMeta, err := d.dbstore.write(ctx, &valueItem{key: key, value: val})
 	if err != nil {
 		return err
@@ -624,10 +666,16 @@ func (d *Diskv) Set(ctx context.Context, key string, val []byte) error {
 }
 
 func (d *Diskv) SetString(ctx context.Context, key string, val string) error {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
 	return d.Set(ctx, key, []byte(val))
 }
 
 func (d *Diskv) Has(ctx context.Context, key string) (has bool, err error) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
 	_, has, err = d.idx.getValueMeta(ctx, key)
 	return has, err
 }
@@ -635,6 +683,9 @@ func (d *Diskv) Has(ctx context.Context, key string) (has bool, err error) {
 // ok = true => 值存在并已删除
 // ok = false => 值不存在
 func (d *Diskv) Del(ctx context.Context, key string) (ok bool, err error) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
 	// db file 记录删除
 	err = d.dbstore.del(ctx, key)
 	if err != nil {
