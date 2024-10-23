@@ -1,0 +1,53 @@
+总 slot 数量: 10000
+当负载超过 75% 时，key 的碰撞会对性能出现严重的影响。
+正常可达 10w QPS，负载 80% 时, QPS 降到 9.3w，负载 100% 时, QPS 降低到 2.1w。
+
+// keys = 200
+goos: darwin
+goarch: arm64
+pkg: long/diskv
+BenchmarkDiskv
+BenchmarkDiskv-12    	  102987	     11126 ns/op	     579 B/op	      16 allocs/op
+PASS
+ok  	long/diskv	1.559s
+
+
+// keys = 1000
+goos: darwin
+goarch: arm64
+pkg: long/diskv
+BenchmarkDiskv
+BenchmarkDiskv-12    	  102768	     14622 ns/op	     595 B/op	      17 allocs/op
+PASS
+ok  	long/diskv	1.952s
+
+
+// keys = 5000
+goos: darwin
+goarch: arm64
+pkg: long/diskv
+BenchmarkDiskv
+BenchmarkDiskv-12    	  102075	     12365 ns/op	     701 B/op	      21 allocs/op
+PASS
+ok  	long/diskv	1.680s
+
+
+// keys = 8000
+goos: darwin
+goarch: arm64
+pkg: long/diskv
+BenchmarkDiskv
+BenchmarkDiskv-12    	   92726	     13935 ns/op	     991 B/op	      32 allocs/op
+PASS
+ok  	long/diskv	1.720s
+
+
+// keys = 10000
+goos: darwin
+goarch: arm64
+pkg: long/diskv
+BenchmarkDiskv
+BenchmarkDiskv-12    	   21207	     53755 ns/op	   11129 B/op	     393 allocs/op
+PASS
+ok  	long/diskv	2.001s
+
