@@ -2,7 +2,7 @@
 当负载超过 75% 时，key 的碰撞会对性能出现严重的影响。
 正常可达 10w QPS，负载 80% 时, QPS 降到 9.3w，负载 100% 时, QPS 降低到 2.1w。
 
-// keys = 200
+// block = 32, keys = 200
 goos: darwin
 goarch: arm64
 pkg: long/diskv
@@ -12,7 +12,7 @@ PASS
 ok  	long/diskv	1.559s
 
 
-// keys = 1000
+// block = 32, keys = 1000
 goos: darwin
 goarch: arm64
 pkg: long/diskv
@@ -22,7 +22,7 @@ PASS
 ok  	long/diskv	1.952s
 
 
-// keys = 5000
+// block = 32, keys = 5000
 goos: darwin
 goarch: arm64
 pkg: long/diskv
@@ -32,7 +32,7 @@ PASS
 ok  	long/diskv	1.680s
 
 
-// keys = 8000
+// block = 32, keys = 8000
 goos: darwin
 goarch: arm64
 pkg: long/diskv
@@ -42,7 +42,7 @@ PASS
 ok  	long/diskv	1.720s
 
 
-// keys = 10000
+// block = 32, keys = 10000
 goos: darwin
 goarch: arm64
 pkg: long/diskv
@@ -50,4 +50,25 @@ BenchmarkDiskv
 BenchmarkDiskv-12    	   21207	     53755 ns/op	   11129 B/op	     393 allocs/op
 PASS
 ok  	long/diskv	2.001s
+
+
+// block = 64, keys = 5000
+goos: darwin
+goarch: arm64
+pkg: long/diskv
+BenchmarkDiskv
+BenchmarkDiskv-12    	   99106	     12531 ns/op	     790 B/op	      21 allocs/op
+PASS
+ok  	long/diskv	1.671s
+
+
+
+// block = 128, keys = 5000
+goos: darwin
+goarch: arm64
+pkg: long/diskv
+BenchmarkDiskv
+BenchmarkDiskv-12    	   99234	     12720 ns/op	     968 B/op	      21 allocs/op
+PASS
+ok  	long/diskv	1.693s
 

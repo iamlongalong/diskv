@@ -167,7 +167,10 @@ func BenchmarkDiskv(b *testing.B) {
 
 	var db *Diskv
 	var err error
-	config := DefaultCreateConfig
+	config := CreateConfig{
+		KeysLen: 10000,
+		MaxLen:  128,
+	}
 	config.Dir = dir
 
 	db, err = CreateDB(ctx, &config)
