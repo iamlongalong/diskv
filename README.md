@@ -13,8 +13,8 @@
 - 极力减小对内存的占用，所有操作，尽量都通过直接操作文件系统完成
 
 从文件存储上看，如下:
-![](./assets/db.png)
-![](./assets/idx.png)
+![](assets/db.png)
+![](assets/idx.png)
 
 ## 快速上手
 
