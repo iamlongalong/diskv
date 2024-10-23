@@ -635,6 +635,12 @@ func (d *Diskv) Has(ctx context.Context, key string) (has bool, err error) {
 // ok = true => 值存在并已删除
 // ok = false => 值不存在
 func (d *Diskv) Del(ctx context.Context, key string) (ok bool, err error) {
+	// db file 记录删除
+	err = d.dbstore.del(ctx, key)
+	if err != nil {
+		return false, err
+	}
+
 	return d.idx.delValueMeta(ctx, key) // 只删索引，不删值
 }
 
@@ -677,7 +683,22 @@ func (d *dbsotre) read(ctx context.Context, m *valueMeta) (*valueItem, error) {
 		return nil, err
 	}
 
-	return decodeValue(m.key, data)
+	_, val, err := decodeValue(m.key, data)
+	return val, err
+}
+
+const (
+	opSet = "_set"
+	opDel = "_del"
+
+	splitOp = '\n'
+)
+
+func (d *dbsotre) del(ctx context.Context, key string) error {
+	return d.runWithFile(ctx, func(ctx context.Context, f *os.File) error {
+		_, err := f.Write(encodeValueItem(opDel, &valueItem{key: key}))
+		return err
+	})
 }
 
 func (d *dbsotre) write(ctx context.Context, valueItem *valueItem) (*valueMeta, error) {
@@ -693,7 +714,7 @@ func (d *dbsotre) write(ctx context.Context, valueItem *valueItem) (*valueMeta, 
 
 		meta.offset = int(fileInfo.Size())
 
-		val := encodeValueItem(valueItem)
+		val := encodeValueItem(opSet, valueItem)
 		meta.length = len(val)
 
 		_, err = f.Write(val)
@@ -710,33 +731,39 @@ func (d *dbsotre) write(ctx context.Context, valueItem *valueItem) (*valueMeta, 
 	return meta, nil
 }
 
-func decodeValue(key string, data []byte) (val *valueItem, err error) {
+func decodeValue(key string, data []byte) (op string, val *valueItem, err error) {
 
 	val = &valueItem{}
-	if len(data) < 2 {
-		return nil, errors.New("read data error, data length not match")
+	if len(data) < 5 {
+		return "", nil, errors.New("read data error, data length not match")
 	}
-
-	if data[0] != '[' {
-		return nil, errors.New("read data error, data of key start '[' not match")
-	}
-
-	vals := bytes.SplitN(data[1:len(data)-1], []byte("]"), 2)
+	vals := bytes.SplitN(data, []byte{'['}, 2)
 	if len(vals) != 2 {
-		return nil, errors.New("read data error, split length not match")
+		return "", nil, errors.New("read data error, split length not match")
 	}
 
-	val.key = string(vals[0])
+	op = string(vals[0])
+
+	kvdata := vals[1][0 : len(vals[1])-1] // 去除结尾的 splitOp
+
+	dataVals := bytes.SplitN(kvdata, []byte("]"), 2)
+	if len(dataVals) < 1 {
+		return "", nil, errors.New("read data error, split length not match")
+	}
+
+	val.key = string(dataVals[0])
 	if val.key != key {
-		return nil, errors.New("read data error, key not match")
+		return "", nil, errors.New("read data error, key not match")
 	}
 
-	val.value = vals[1]
+	if len(dataVals) == 2 {
+		val.value = dataVals[1]
+	}
 
-	return val, nil
+	return op, val, nil
 }
 
-func encodeValueItem(val *valueItem) []byte {
-	res := append([]byte("["+val.key+"]"), val.value...)
-	return append(res, '\n')
+func encodeValueItem(op string, val *valueItem) []byte {
+	res := append([]byte(op+"["+val.key+"]"), val.value...)
+	return append(res, splitOp)
 }

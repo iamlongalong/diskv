@@ -150,3 +150,25 @@ func BenchmarkDiskv(b *testing.B) {
 		}
 	}
 }
+
+func TestXX(t *testing.T) {
+	x := "_del[xx]"
+	op, item, err := decodeValue("xx", []byte(x))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if item.key != "xx" {
+		t.Fatal("key not match")
+	}
+
+	if item.value != nil {
+		t.Fatal("value not match")
+	}
+
+	if op != "_del" {
+		t.Fatal("op not match")
+	}
+
+	fmt.Printf("op: [%s], key: [%s], val: [%s]\n", op, item.key, string(item.value))
+}

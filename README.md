@@ -12,6 +12,10 @@
 - 以明文方式存储数据，让数据可读性高
 - 极力减小对内存的占用，所有操作，尽量都通过直接操作文件系统完成
 
+从文件存储上看，如下:
+![](./assets/db.png)
+![](./assets/idx.png)
+
 ## 快速上手
 
 ### 创建一个 db
@@ -45,9 +49,6 @@ has, err := db.Has(ctx, key)
 err = db.ForEach(ctx, func(key string, value []byte) bool {
     return true // 继续遍历
 })
-
-// keys
-
 
 ```
 
