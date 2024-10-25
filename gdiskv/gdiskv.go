@@ -5,42 +5,31 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/iamlongalong/diskv"
+	"github.com/iamlongalong/diskv/kvstore"
 )
 
 type GDisk[T any] struct {
-	d *diskv.Diskv
+	store kvstore.KVStorer
 }
 
-func New[T any](d *diskv.Diskv) *GDisk[T] {
-	return &GDisk[T]{d: d}
+func New[T any](store kvstore.KVStorer) *GDisk[T] {
+	return &GDisk[T]{store: store}
 }
 
-func NewT[T any](_ T, d *diskv.Diskv) *GDisk[T] {
-	return &GDisk[T]{d: d}
+func NewT[T any](_ T, store kvstore.KVStorer) *GDisk[T] {
+	return &GDisk[T]{store: store}
 }
 
 func (gd *GDisk[T]) Get(ctx context.Context, key string) (*T, bool, error) {
 	t := new(T)
 
-	data, ok, err := gd.d.Get(ctx, key)
+	data, ok, err := gd.store.Get(ctx, key)
 	if err != nil {
 		return nil, false, err
 	}
 	if !ok {
 		return nil, false, nil
 	}
-
-	// 1. 先看自身是否实现了 GMarshaler 接口,
-	// update: 不用看自身是否实现，所需要直接注册到 RegisterGMarshaler() 中
-	// if marshaler, ok := any(t).(GMarshaler[T]); ok {
-	// 	err = marshaler.Unmarshal(data, t)
-	// 	if err != nil {
-	// 		return nil, false, err
-	// 	}
-
-	// 	return t, true, nil
-	// }
 
 	// 2. 先看自身是否实现了 TMarshaler 接口
 	if marshaler, ok := any(t).(TMarshaler); ok {
@@ -67,21 +56,10 @@ func (gd *GDisk[T]) Get(ctx context.Context, key string) (*T, bool, error) {
 
 func (gd *GDisk[T]) Set(ctx context.Context, key string, v *T) error {
 	if v == nil {
-		// 等同于删除
-		_, err := gd.d.Del(ctx, key)
+		// equal as del
+		_, err := gd.store.Del(ctx, key)
 		return err
 	}
-
-	// 1. 先看自身是否实现了 GMarshaler 接口
-	// update: 不用看自身是否实现，所需要直接注册到 RegisterGMarshaler() 中
-	// if marshaler, ok := any(v).(GMarshaler[T]); ok {
-	// 	data, err := marshaler.Marshal(v)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	return gd.d.Set(ctx, key, data)
-	// }
 
 	// 2. 先看自身是否实现了 TMarshaler 接口
 	if marshaler, ok := any(v).(TMarshaler); ok {
@@ -90,7 +68,7 @@ func (gd *GDisk[T]) Set(ctx context.Context, key string, v *T) error {
 			return err
 		}
 
-		return gd.d.Set(ctx, key, data)
+		return gd.store.Set(ctx, key, data)
 	}
 
 	// 3. 看是否注册了全局的 GMarshaler
@@ -100,7 +78,7 @@ func (gd *GDisk[T]) Set(ctx context.Context, key string, v *T) error {
 			return err
 		}
 
-		return gd.d.Set(ctx, key, data)
+		return gd.store.Set(ctx, key, data)
 	}
 
 	return errors.New("not found marshaler")
@@ -108,11 +86,11 @@ func (gd *GDisk[T]) Set(ctx context.Context, key string, v *T) error {
 
 // NDiskv, 无须在初始化时指定类型，根据传入的 v 的类型匹配
 type NDiskv struct {
-	d *diskv.Diskv
+	store kvstore.KVStorer
 }
 
-func NewNDiskv(d *diskv.Diskv) *NDiskv {
-	return &NDiskv{d: d}
+func NewNDiskv(store kvstore.KVStorer) *NDiskv {
+	return &NDiskv{store: store}
 }
 
 func (nd *NDiskv) Get(ctx context.Context, key string, v any) (bool, error) {
@@ -122,7 +100,7 @@ func (nd *NDiskv) Get(ctx context.Context, key string, v any) (bool, error) {
 		return false, errors.New("v must be pointer")
 	}
 
-	data, ok, err := nd.d.Get(ctx, key)
+	data, ok, err := nd.store.Get(ctx, key)
 	if err != nil {
 		return false, err
 	}
@@ -151,7 +129,7 @@ func (nd *NDiskv) Get(ctx context.Context, key string, v any) (bool, error) {
 
 func (nd *NDiskv) Set(ctx context.Context, key string, v any) error {
 	if v == nil {
-		_, err := nd.d.Del(ctx, key)
+		_, err := nd.store.Del(ctx, key)
 		return err
 	}
 
@@ -171,7 +149,7 @@ func (nd *NDiskv) Set(ctx context.Context, key string, v any) error {
 			return err
 		}
 
-		return nd.d.Set(ctx, key, data)
+		return nd.store.Set(ctx, key, data)
 	}
 
 	// 2. 看是否注册了全局的 Marshaler
@@ -181,7 +159,7 @@ func (nd *NDiskv) Set(ctx context.Context, key string, v any) error {
 			return err
 		}
 
-		return nd.d.Set(ctx, key, data)
+		return nd.store.Set(ctx, key, data)
 	}
 
 	return errors.New("not found marshaler")
