@@ -305,6 +305,11 @@ func formatIdxMeta(meta *idxMeta) []byte {
 	return []byte(idxStr)
 }
 
+const (
+	maxlength = "maxlength"
+	keyslen   = "keyslen"
+)
+
 func parseIdxMeta(data []byte) (*idxMeta, error) {
 	idxMeta := &idxMeta{}
 	idxMetaStr := string(data)
@@ -320,22 +325,12 @@ func parseIdxMeta(data []byte) (*idxMeta, error) {
 		}
 
 		switch kv[0] {
-		case "maxlength":
+		case maxlength:
 			_, err = fmt.Sscanf(kv[1], "%d", &idxMeta.maxLength)
 			if err != nil {
 				return nil, fmt.Errorf("idx meta format error: %s", err)
 			}
-		// case "lensize":
-		// 	_, err = fmt.Sscanf(kv[1], "%d", &idxMeta.valueLenSize)
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("idx meta format error: %s", err)
-		// 	}
-		// case "offsetsize":
-		// 	_, err = fmt.Sscanf(kv[1], "%d", &idxMeta.offsetSize)
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("idx meta format error: %s", err)
-		// 	}
-		case "keyslen":
+		case keyslen:
 			_, err = fmt.Sscanf(kv[1], "%d", &idxMeta.keysLen)
 			if err != nil {
 				return nil, fmt.Errorf("idx meta format error: %s", err)
@@ -346,11 +341,6 @@ func parseIdxMeta(data []byte) (*idxMeta, error) {
 	}
 
 	return idxMeta, nil
-}
-
-// value meta eg: 0000000longtest,000000,000000000
-func formatValueMeta(meta *valueMeta) []byte {
-	return []byte(fmt.Sprintf("%s,%d,%d", meta.key, meta.length, meta.offset))
 }
 
 func isEmpty(data []byte) bool { // 认为第一个字符为 \x0 时就是空的
@@ -364,17 +354,23 @@ func isEmpty(data []byte) bool { // 认为第一个字符为 \x0 时就是空的
 
 	return false
 }
+
+// value meta eg: 0000000longtest,000000,000000000,
+func formatValueMeta(meta *valueMeta) []byte {
+	return []byte(fmt.Sprintf("%s,%d,%d|", meta.key, meta.length, meta.offset))
+}
+
 func parseValueMeta(data []byte) (meta *valueMeta, ok bool, err error) {
 	if isEmpty(data) { // 空数据
 		return nil, false, nil
 	}
 
 	meta = &valueMeta{}
-	dataStr := string(data)
+	dataStr := string(data[0 : len(data)-1]) // 去除尾部分隔符 '|'
 
 	dataStrs := strings.Split(dataStr, ",")
 
-	if len(dataStrs) != 3 {
+	if len(dataStrs) != 3 { // [key,valuelen,offset]
 		return nil, false, fmt.Errorf("parse value meta error: %s", dataStr)
 	}
 
@@ -485,10 +481,6 @@ func (idx *idx) getValueMeta(ctx context.Context, key string) (*valueMeta, bool,
 }
 
 func (idx *idx) getValueOfKeyFromSlot(ctx context.Context, key string, slot int) (*valueMeta, bool, error) {
-	// idxMeta, err := idx.getIdxMeta(ctx)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	for {
 		valueMeta, ok, err := idx.getValueOfSlot(ctx, slot)
