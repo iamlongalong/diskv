@@ -54,8 +54,12 @@ err = db.ForEach(ctx, func(key string, value []byte) bool {
 
 ```
 
+## 基于 diskv 的带类型存储
+
+详情见 `gdiskv` 目录.
 
 ## TODO
 
 - [x] 支持 idx 文件迁移
 - [x] 支持 db 文件压缩 + 迁移
+- [x] 支持存储特定结构体的接口
