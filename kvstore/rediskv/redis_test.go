@@ -2,16 +2,40 @@ package rediskv
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
+	"os"
 	"testing"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/go-redis/redis/v8"
 )
 
+var mr *miniredis.Miniredis
+
+// TestMain 控制测试的setup和teardown
+func TestMain(m *testing.M) {
+	var err error
+	mr, err = miniredis.Run()
+	if err != nil {
+		fmt.Printf("Could not start miniredis: %v", err)
+		os.Exit(1)
+	}
+	defer mr.Close()
+
+	// 执行测试
+	code := m.Run()
+
+	// Exit with the result code from the tests
+	os.Exit(code)
+}
+
+// setup 使用 miniredis 创建一个 RedisStore
 func setup() *RedisStore {
 	options := &redis.Options{
-		Addr: "localhost:6379", // 根据实际配置进行修改
+		Addr: mr.Addr(),
 	}
-	prefix := "test"
+	prefix := fmt.Sprintf("test:prefix:%d", rand.Int())
 	return NewStore(options, prefix)
 }
 

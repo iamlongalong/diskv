@@ -5,7 +5,10 @@ import (
 	"fmt"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/iamlongalong/diskv/kvstore"
 )
+
+var _ kvstore.KVStorer = (*RedisStore)(nil)
 
 // RedisStore represents a Redis key-value store with a prefix.
 type RedisStore struct {
