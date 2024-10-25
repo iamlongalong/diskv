@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/iamlongalong/diskv/kvstore"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
+
+var _ kvstore.KVStorer = (*EtcdStore)(nil)
 
 type EtcdStore struct {
 	client *clientv3.Client

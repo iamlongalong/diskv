@@ -5,8 +5,11 @@ import (
 	"errors"
 	"time"
 
+	"github.com/iamlongalong/diskv/kvstore"
 	"go.etcd.io/bbolt"
 )
+
+var _ kvstore.KVStorer = (*BboltStore)(nil)
 
 const (
 	DefaultBucketName = "_kvstore"

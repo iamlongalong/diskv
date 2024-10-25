@@ -2,15 +2,11 @@ module github.com/iamlongalong/diskv/kvstore/bboltkv
 
 go 1.22
 
-toolchain go1.22.0
-
-require go.etcd.io/bbolt v1.3.11
-
-require github.com/stretchr/testify v1.9.0 // indirect
+toolchain go1.22.8
 
 require (
-	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.24.0 // indirect
+	github.com/iamlongalong/diskv v0.0.0-20241025172318-af7cb836d4ed
+	go.etcd.io/bbolt v1.3.11
 )
 
-replace google.golang.org/grpc/naming => google.golang.org/grpc v1.29.1
+require golang.org/x/sys v0.4.0 // indirect

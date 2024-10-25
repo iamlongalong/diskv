@@ -6,7 +6,11 @@ import (
 	"errors"
 
 	_ "github.com/mattn/go-sqlite3"
+
+	"github.com/iamlongalong/diskv/kvstore"
 )
+
+var _ kvstore.KVStorer = (*SqliteStore)(nil)
 
 // SqliteStore represents a key-value store implemented with SQLite.
 type SqliteStore struct {
