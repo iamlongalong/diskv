@@ -1,4 +1,4 @@
-github.com/iamlongalong/diskv v0.0.0-20241025172318-af7cb836d4ed h1:ozc8Ulz07hAXgkCCbuPDpTSrjW0+EicCLMzXQ7a9vYs=
-github.com/iamlongalong/diskv v0.0.0-20241025172318-af7cb836d4ed/go.mod h1:yYRfOOuk8LfvXZSaTHssYp8nT+v2MpVb03ErhYT8SOw=
+github.com/iamlongalong/diskv v0.1.0 h1:fyWVKw7zuPznaM1HfwiIw+nIp97Q+rMKmdzRCgVktNM=
+github.com/iamlongalong/diskv v0.1.0/go.mod h1:yYRfOOuk8LfvXZSaTHssYp8nT+v2MpVb03ErhYT8SOw=
 github.com/mattn/go-sqlite3 v1.14.24 h1:tpSp2G2KyMnnQu99ngJ47EIkWVmliIizyZBfPrBWDRM=
 github.com/mattn/go-sqlite3 v1.14.24/go.mod h1:Uh1q+B4BYcTPb+yiD3kU8Ct7aC0hY9fxUwlHK0RXw+Y=

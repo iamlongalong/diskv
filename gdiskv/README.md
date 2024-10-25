@@ -3,6 +3,7 @@
 generic disk kv store
 
 让 kv store 直接读取具体类型，而不是用 []byte 或 string 转换。
+实现了 diskv、redis、bbolt、etcd、sqlite3 几种实现。
 
 ### 快速上手
 

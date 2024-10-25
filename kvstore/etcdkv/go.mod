@@ -3,7 +3,7 @@ module github.com/iamlongalong/diskv/kvstore/etcdkv
 go 1.22
 
 require (
-	github.com/iamlongalong/diskv v0.0.0-20241025172318-af7cb836d4ed
+	github.com/iamlongalong/diskv v0.1.0
 	github.com/stretchr/testify v1.9.0
 	go.etcd.io/etcd/client/v3 v3.5.16
 	go.etcd.io/etcd/server/v3 v3.5.16

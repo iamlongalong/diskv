@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	_ "github.com/mattn/go-sqlite3"
 
@@ -17,6 +18,8 @@ type SqliteStore struct {
 	db *sql.DB
 }
 
+const DefaultTable = "diskv"
+
 // NewStore initializes a new SqliteStore with the given database file path.
 func NewStore(databasePath string) (*SqliteStore, error) {
 	db, err := sql.Open("sqlite3", databasePath)
@@ -25,12 +28,12 @@ func NewStore(databasePath string) (*SqliteStore, error) {
 	}
 
 	// Create the key-value table if it doesn't exist
-	_, err = db.Exec(`
-        CREATE TABLE IF NOT EXISTS kv (
+	_, err = db.Exec(fmt.Sprintf(`
+        CREATE TABLE IF NOT EXISTS %s (
             key TEXT PRIMARY KEY,
             value BLOB
         )
-    `)
+    `, DefaultTable))
 	if err != nil {
 		return nil, err
 	}

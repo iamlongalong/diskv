@@ -6,7 +6,7 @@
 这一操作核心是提升读写的性能，和压缩存储大小。
 
 但有些时候，我们希望用更简单的方式去存储数据，简单到我们肉眼就能读懂的程度。
-这让我们对 "数据丢失" 和 "数据恢复" 操作不熟练的同学，心中不免多有不安。
+当我们对 "数据丢失" 和 "数据恢复" 操作不熟练时，心中难免多有不安。
 
 于是，我希望实现一个极简的 kv 存储系统，满足两个基本理念：
 - 以明文方式存储数据，让数据可读性高
@@ -22,13 +22,11 @@
 
 ### 创建一个 db
 ```go
-db, err := diskv.CreateDB(ctx, &diskv.CreateConfig{})
-
-// 或者用默认的 config
-config := DefaultCreateConfig
-config.Dir = dir
-
-db, err = diskv.CreateDB(ctx, &config)
+db, err := diskv.CreateDB(ctx, &diskv.CreateConfig{
+    Dir: "/tmp/diskv",
+    KeysLen: 100, // 预分配的 key 的数量
+    MaxLen: 64, // idx 块的最大长度
+})
 ```
 
 ### 数据操作

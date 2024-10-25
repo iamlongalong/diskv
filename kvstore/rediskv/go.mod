@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/alicebob/miniredis/v2 v2.33.0
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/iamlongalong/diskv v0.0.0-20241025172318-af7cb836d4ed
+	github.com/iamlongalong/diskv v0.1.0
 )
 
 require (
