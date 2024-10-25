@@ -108,13 +108,13 @@ SetDefaultMarshaler(NMarshaler)
 
 // 其中，两类 marshaler 的定义如下:
 type GMarshaler[T any] interface {
-	Marshal(v *T) ([]byte, error)
-	Unmarshal(data []byte, v *T) (err error)
+    Marshal(v *T) ([]byte, error)
+    Unmarshal(data []byte, v *T) (err error)
 }
 
 type NMarshaler interface {
-	Marshal(v any) ([]byte, error)
-	Unmarshal(data []byte, v any) error
+    Marshal(v any) ([]byte, error)
+    Unmarshal(data []byte, v any) error
 }
 
 ```
