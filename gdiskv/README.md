@@ -40,6 +40,8 @@ err = db.Set(ctx, "user1", nil)
 if err != nil {log.Fatal(err)}
 ```
 
+#### 一个 store 存储不同类型的数据
+
 若你希望一个 db 可以用来存不同类型的数据，则可以使用 NDiskv, 如下：
 
 ```go
@@ -58,7 +60,7 @@ diskdb, err := diskv.CreateDB(ctx, &gdiskv.CreateConfig{Dir: "/tmp/gdiskv", Keys
 if err != nil {log.Fatal(err)}
 
 // 创建一个存储器
-ndb := gdiskv.NewNDiskv(diskdb)
+ndb := gdiskv.NewNDiskv(diskdb) // 意为: normal diskv, 普通存储(不限定类型)
 
 // 存储
 user01 := User{
@@ -72,7 +74,7 @@ dog01 := Dog{
     Name: "lala",
     Color: "colorful",
 }
-err := ndb.Set(ctx, "dog01", user01)
+err := ndb.Set(ctx, "dog01", dog01)
 if err != nil {log.Fatal(err)}
 
 // 读取
@@ -92,7 +94,10 @@ if err != nil {log.Fatal(err)}
 
 ```
 
+### marshal 逻辑
+
 存储读取时，就涉及到 marshal 和 unmarshal 的过程，marshal 方法的选取顺序依次为：
+
 ```go
 // 1. 看自身是否实现了 marshal 方法
 type TMarshaler interface {
@@ -119,3 +124,10 @@ type NMarshaler interface {
 }
 
 ```
+
+### 使用其他的底层存储
+
+gdiskv 并不要求一定使用 diskv 作为底层存储，而是支持使用任何实现了 `diskv.KVStore` 接口的存储系统。
+目前，已经封装了 `redis`、`sqlite3`、`etcd3` 和 `bbolt` 的存储。
+
+例子可参考 `examples/session` 部分。
