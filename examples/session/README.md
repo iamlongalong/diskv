@@ -80,6 +80,7 @@ idx 文件则只有 `[maxlength:000128,keyslen:000500,x:000000000000000000000000
 ### 使用其他存储系统
 
 #### redis
+redis 是互联网系统中最常用的 kv 存储系统了，基本上一涉及到分布式系统的 kv 缓存，首选就是 redis 了。
 ```go
 import (
     "github.com/go-redis/redis/v8"
@@ -93,6 +94,7 @@ func x() {
 ```
 
 #### bbolt
+bbolt 是 etcd 的底层存储，是一个基于 LSM tree 的本地 kv 数据库，使用起来非常方便，性能、可靠性等也都非常不错。
 ```go
 import (
     "github.com/iamlongalong/diskv/kvstore/bboltkv"
@@ -107,6 +109,8 @@ func x() {
 ```
 
 #### sqlite3
+真实业务中，也有很多项目使用 sqlite 作为 kv 存储的，比如 vscode 的插件配置存储等等，轻量级数据持久化首选(十万量级以内)。
+
 ```go
 import (
     "github.com/iamlongalong/diskv/kvstore/sqlitekv"
