@@ -11,11 +11,12 @@
 于是，我希望实现一个极简的 kv 存储系统，满足两个基本理念：
 - 以明文方式存储数据，让数据可读性高
 - 极力减小对内存的占用，所有操作，尽量都通过直接操作文件系统完成
+- 极力减少外部依赖 (当前无外部依赖库)
 
 从文件存储上看，如下:
 <p align="center">
   <img src="assets/db.png" width="300" >
-  <img src="assets/idx.png" width="300" >
+  <img src="assets/idx.png" width="405" >
 </p>
 
 ## 快速上手
@@ -52,9 +53,38 @@ err = db.ForEach(ctx, func(key string, value []byte) bool {
 
 ```
 
+### 文件迁移
+
+由于 key 的空间大小是预分配的，若 key 的数量逐渐增加，达到预分配大小的 75% 以上时(负载 75%)，性能就会受到影响。
+实测的 benchmark 测试表明，50% 负载时为 10w QPS, 80% 负载时为 9.2w QPS, 当负载达到 100% 时，性能从原 10w QPS 降低到了 2.1w QPS，详见 [benchmark](./benchmark.txt) 文件。
+
+```go
+db, err := diskv.CreateDB(ctx, &diskv.CreateConfig{
+    Dir: "/tmp/diskv",
+    MaxLen:  64,
+    KeysLen: 1000, // 预分配的 key 的数量
+})
+
+// 主动迁移
+err := db.MigrateIdx(ctx, &diskv.CreateConfig{
+    MaxLen:  64,
+    KeysLen: 5000, // 预分配的 key 的数量
+})
+
+```
+
+当前的 DB 文件，是以 log 的模式增量写入的，idx 只记录最后一次 key 的位置，因此，当修改、删除等操作频繁发生时，log 文件就会持续增长。可通过 `db.MigrateValue()` 进行主动迁移，这个操作会根据 idx 记录的所有 key 信息，把有效的 value 移动到新的 db 文件中，并删除旧的 db 文件。
+
+```go
+err := db.MigrateValue(ctx)
+```
+
+上述的迁移都是阻塞进行的，迁移过程中无法读写数据。
+迁移后的文件名不会变动，老的文件会以 `*._bak` 的后缀名保存最近一次的迁移文件。
+
 ## 基于 diskv 的带类型存储
 
-详情见 `gdiskv` 目录.
+详情见 [gkv](./gkv/README.md) 目录. 
 
 ## TODO
 

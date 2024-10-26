@@ -1,4 +1,4 @@
-package gdiskv
+package gkv
 
 import (
 	"encoding/json"
@@ -40,6 +40,7 @@ type gUnmarshaler[T any] interface {
 
 // type marshaler
 // 实现了自身的 marshaler
+// update: 暂时不支持，可用 GMarshaler 实现
 type TMarshaler interface {
 	Marshal() ([]byte, error)
 	Unmarshal([]byte) error

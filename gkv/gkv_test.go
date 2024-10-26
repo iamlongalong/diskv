@@ -1,4 +1,4 @@
-package gdiskv
+package gkv
 
 import (
 	"context"
@@ -244,7 +244,7 @@ func TestGDiskMarshaler(t *testing.T) {
 
 func TestNDisk(t *testing.T) {
 	ctx := context.Background()
-	disk, err := diskv.CreateDB(ctx, &diskv.CreateConfig{
+	db, err := diskv.CreateDB(ctx, &diskv.CreateConfig{
 		Dir:     "test",
 		KeysLen: 100,
 		MaxLen:  64,
@@ -253,7 +253,7 @@ func TestNDisk(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	nd := NewNDiskv(disk)
+	nd := NewNkv(db)
 
 	t.Run("test_ndiskv", func(t *testing.T) {
 		// tmarshaler

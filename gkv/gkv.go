@@ -1,4 +1,4 @@
-package gdiskv
+package gkv
 
 import (
 	"context"
@@ -8,19 +8,19 @@ import (
 	"github.com/iamlongalong/diskv/kvstore"
 )
 
-type GDisk[T any] struct {
+type Gkv[T any] struct {
 	store kvstore.KVStorer
 }
 
-func New[T any](store kvstore.KVStorer) *GDisk[T] {
-	return &GDisk[T]{store: store}
+func New[T any](store kvstore.KVStorer) *Gkv[T] {
+	return &Gkv[T]{store: store}
 }
 
-func NewT[T any](_ T, store kvstore.KVStorer) *GDisk[T] {
-	return &GDisk[T]{store: store}
+func NewT[T any](_ T, store kvstore.KVStorer) *Gkv[T] {
+	return &Gkv[T]{store: store}
 }
 
-func (gd *GDisk[T]) Get(ctx context.Context, key string) (*T, bool, error) {
+func (gd *Gkv[T]) Get(ctx context.Context, key string) (*T, bool, error) {
 	t := new(T)
 
 	data, ok, err := gd.store.Get(ctx, key)
@@ -54,7 +54,7 @@ func (gd *GDisk[T]) Get(ctx context.Context, key string) (*T, bool, error) {
 	return t, false, errors.New("not found marshaler")
 }
 
-func (gd *GDisk[T]) Set(ctx context.Context, key string, v *T) error {
+func (gd *Gkv[T]) Set(ctx context.Context, key string, v *T) error {
 	if v == nil {
 		// equal as del
 		_, err := gd.store.Del(ctx, key)
@@ -84,16 +84,16 @@ func (gd *GDisk[T]) Set(ctx context.Context, key string, v *T) error {
 	return errors.New("not found marshaler")
 }
 
-// NDiskv, 无须在初始化时指定类型，根据传入的 v 的类型匹配
-type NDiskv struct {
+// Nkv, 无须在初始化时指定类型，根据传入的 v 的类型匹配
+type Nkv struct {
 	store kvstore.KVStorer
 }
 
-func NewNDiskv(store kvstore.KVStorer) *NDiskv {
-	return &NDiskv{store: store}
+func NewNkv(store kvstore.KVStorer) *Nkv {
+	return &Nkv{store: store}
 }
 
-func (nd *NDiskv) Get(ctx context.Context, key string, v any) (bool, error) {
+func (nd *Nkv) Get(ctx context.Context, key string, v any) (bool, error) {
 	// 检查 v 是否是指针
 	typ := reflect.TypeOf(v)
 	if typ.Kind() != reflect.Ptr {
@@ -127,7 +127,7 @@ func (nd *NDiskv) Get(ctx context.Context, key string, v any) (bool, error) {
 	return true, fn(data, reflect.ValueOf(v))
 }
 
-func (nd *NDiskv) Set(ctx context.Context, key string, v any) error {
+func (nd *Nkv) Set(ctx context.Context, key string, v any) error {
 	if v == nil {
 		_, err := nd.store.Del(ctx, key)
 		return err

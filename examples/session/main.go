@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/iamlongalong/diskv"
-	"github.com/iamlongalong/diskv/gdiskv"
+	"github.com/iamlongalong/diskv/gkv"
 )
 
-var sessionStore *gdiskv.GDisk[User]
+var sessionStore *gkv.Gkv[User]
 
 func init() {
 	db, err := diskv.CreateDB(context.Background(), &diskv.CreateConfig{
@@ -26,7 +26,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	sessionStore = gdiskv.New[User](db)
+	sessionStore = gkv.New[User](db)
 }
 
 func main() {

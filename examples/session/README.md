@@ -1,25 +1,26 @@
 ## 说明
 
-这是把 `gdiskv` 作为 session 存储使用的例子，可以实现 session 的持久化。
+这是把 `gkv` 作为 session 存储使用的例子，可以实现 session 的持久化。
 
-使用 `gdiskv` 的价值，是在于可以存储任意结构体，存储和使用都是直接基于结构体实例的，而无须自己做一次 marshal 和 unmarshal。
+使用 `gkv` 的价值，是在于可以存储任意结构体，存储和使用都是直接基于结构体实例的，而无须自己做一次 marshal 和 unmarshal。
 可以看到，`sessionStore.Set` 和 `sessionStore.Get` 的方法签名如下:
 ```go
-func (gd *gdiskv.GDisk[User]) Set(ctx context.Context, key string, v *User) error
-func (gd *gdiskv.GDisk[User]) Get(ctx context.Context, key string) (*User, bool, error)
+func (gd *gkv.Gkv[User]) Set(ctx context.Context, key string, v *User) error
+func (gd *gkv.Gkv[User]) Get(ctx context.Context, key string) (*User, bool, error)
 ```
 
 使用 `diskv` 作为底层存储，最大的好处是 diskv 直接基于本地文件，无须再安装各种依赖系统，比如 redis 等。另外，diskv 的存储是基于明文的，其格式非常简单，你甚至可以直接通过文件系统查看数据。
 
-当然，从扩展性的角度看，`gdiskv` 的底层存储可以替换为 `redis`、`sqlite3`、`etcd3`、`bbolt` 等等。
+当然，从扩展性的角度看，`gkv` 的底层存储可以替换为 `redis`、`sqlite3`、`etcd3`、`bbolt` 等等。可见 [其他存储类型](#使用其他存储系统)
 
-marshal 和 unmarshal 的默认实现是 `encoding/json`，但同样你可以自行实现 marshal 和 unmarshal 方法，以支持更多格式。(详见 gdiskv 中的说明)
+marshal 和 unmarshal 的默认实现是 `encoding/json`，但同样你可以自行实现 marshal 和 unmarshal 方法，以支持更多格式。(详见 gkv 中的说明)
 
 ### 动手指令
 
 #### 启动 server 端
 ```bash
-go run ./cmd/gdiskv/main.go
+# pwd in ./examples
+go run ./session/main.go
 ```
 
 #### 请求 user 接口
@@ -87,7 +88,7 @@ import (
 
 func x() {
     store := rediskv.NewStore(&redis.Options{Addr: "127.0.0.1:6379"}, "prefix")
-    db := gdiskv.NewT(User{}, store)
+    db := gkv.NewT(User{}, store)
 }
 ```
 
@@ -101,7 +102,7 @@ func x() {
     store, err := bboltkv.NewStore("./data/dbpath")
     if err != nil {log.Fatal(err)}
 
-    db := gdiskv.NewT(User{}, store)
+    db := gkv.NewT(User{}, store)
 }
 ```
 
@@ -115,6 +116,6 @@ func x() {
     db, err := sqlitekv.NewStore("./data/dbpath")
     if err != nil {log.Fatal(err)}
 
-    db := gdiskv.NewT(User{}, db)
+    db := gkv.NewT(User{}, db)
 }
 ```

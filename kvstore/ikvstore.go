@@ -3,7 +3,7 @@ package kvstore
 import "context"
 
 // KVStorer is a simple key-value store interface.
-// It is used by the gdiskv package to store the values.
+// It is used by the gkv package to store the values.
 // diskv implements this interface.
 // more implementations can be `redis`,`sqlite3`,`ectd`,`bbolt` and other kv stores.
 type KVStorer interface {
