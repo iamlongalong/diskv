@@ -3,7 +3,7 @@
 generic kv store, 意为 带泛型的 kv store，让 kv store 直接读取具体类型，而不是用 []byte 或 string 转换。
 
 gkv 的底层存储基于 `kvstore.KVStorer` 接口，可以直接使用 `diskv.CreateDB` 创建一个符合要求的存储器。
-同时，也可以使用 redis、bbolt、etcd、sqlite3 几种实现，详情可见 `kvstore` 目录。
+同时，也可以使用 redis、bbolt、etcd、sqlite3 几种实现，详情可见 [kvstore](../kvstore) 目录。
 
 ### 快速上手
 
