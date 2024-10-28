@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/iamlongalong/diskv"
+	"github.com/iamlongalong/diskv/diskv"
 )
 
 type TStruct struct {

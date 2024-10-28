@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/iamlongalong/diskv"
+	"github.com/iamlongalong/diskv/diskv"
 	"github.com/iamlongalong/diskv/gkv"
 )
 
