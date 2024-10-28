@@ -91,3 +91,5 @@ err := db.MigrateValue(ctx)
 - [x] 支持 idx 文件迁移
 - [x] 支持 db 文件压缩 + 迁移
 - [x] 支持存储特定结构体的接口
+- [ ] 实现一个 list 存储系统 (glist)
+- [ ] 考虑实现一个基于 struct 的存储系统 (gobject)
